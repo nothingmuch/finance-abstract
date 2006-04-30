@@ -19,6 +19,7 @@ BEGIN {
 		Date
 		Account
 		Unit::Exchange
+		Unit::Normalize
 	/ ){
 		aliased->import( "Finance::Abstract::$submodule" );
 		( my $alias = $submodule ) =~ s/.*(?:::|')//;
