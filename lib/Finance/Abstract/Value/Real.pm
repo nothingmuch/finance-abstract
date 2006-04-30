@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-package Finance::Abstract::Value;
+package Finance::Abstract::Value::Real;
 use Moose;
 
 use strict;
@@ -33,12 +33,12 @@ __END__
 
 =head1 NAME
 
-Finance::Abstract::Value - A number of a certain financial unit (real value, as
+Finance::Abstract::Value::Real - A number of a certain financial unit (real value, as
 opposed to nominal)
 
 =head1 SYNOPSIS
 
-	use Finance::Abstract::Value;
+	use Finance::Abstract::Value::Real;
 
 =head1 DESCRIPTION
 

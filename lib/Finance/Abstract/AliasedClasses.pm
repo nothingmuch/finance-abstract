@@ -14,7 +14,7 @@ BEGIN {
 	foreach my $submodule ( qw/
 		Unit
 		Currency
-		Value
+		Value::Real
 		Value::Nominal
 		Date
 		Account

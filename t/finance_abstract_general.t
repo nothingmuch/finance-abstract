@@ -34,9 +34,9 @@ can_ok( Unit, "new" );
 my $dollars_today = Unit->new( currency => $usd, date => $date );
 
 
-can_ok( Value, "new" );
-my $ten_dollars = Value->new( unit => $dollars_today, amount => 10 );
-my $five_dollars = Value->new( unit => $dollars_today, amount => 5 );
+can_ok( Real, "new" );
+my $ten_dollars = Real->new( unit => $dollars_today, amount => 10 );
+my $five_dollars = Real->new( unit => $dollars_today, amount => 5 );
 
 ok( $ten_dollars->not_equals( $five_dollars ), "10 != 5" );
 
@@ -52,7 +52,7 @@ my $lb = Currency->new( code => "GBP" );
 my $lb_today = Unit->new( currency => $lb, date => $date );
 
 dies_ok {
-	Value->new( unit => $lb_today, amount => 10 )->plus( $five_dollars );
+	Real->new( unit => $lb_today, amount => 10 )->plus( $five_dollars );
 } "can't add different units with different currencies";
 
 my $in_a_while = DateTime->from_epoch( epoch => time() + 1000, time_zone => "UTC" );
@@ -60,7 +60,7 @@ my $in_a_while = DateTime->from_epoch( epoch => time() + 1000, time_zone => "UTC
 my $tomorrow_dollar = Unit->new( currency => $usd, date => Date->new( datetime => $in_a_while ) );
 
 dies_ok {
-	Value->new( unit => $tomorrow_dollar, amount => 10 )->plus( $five_dollars );
+	Real->new( unit => $tomorrow_dollar, amount => 10 )->plus( $five_dollars );
 } "can't add same currency but different date";
 
 my $any_day_dollars = Nominal->new( currency => $usd, amount => 10 );
