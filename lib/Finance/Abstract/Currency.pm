@@ -9,11 +9,6 @@ use warnings;
 
 use Locale::Currency;
 
-use overload (
-	"==" => "equals",
-	'""' => "stringify",
-);
-
 has code => (
 	isa => subtype( Str => where { defined Locale::Currency::code2currency( $_ ) } ),
 	is => "ro",

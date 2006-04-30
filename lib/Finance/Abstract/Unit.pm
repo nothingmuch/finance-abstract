@@ -6,8 +6,6 @@ use Moose;
 use strict;
 use warnings;
 
-use overload "==" => "equals";
-
 use Scalar::Util ();
 
 has currency => (
@@ -22,7 +20,7 @@ has date => (
 sub equals {
 	my ( $x, $y ) = @_;
 	Scalar::Util::refaddr( $x ) == Scalar::Util::refaddr( $y ) or # they should normally be the same
-	$x->currency == $y->currency && $x->date == $y->date;
+	$x->currency->equals( $y->currency ) && $x->date->equals( $y->date );
 }
 
 __PACKAGE__;
