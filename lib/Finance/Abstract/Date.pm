@@ -10,13 +10,22 @@ use warnings;
 use DateTime;
 
 has datetime => (
-	isa => subtype( DateTime => where { $_ && $_->time_zone->isa("DateTime::TimeZone::UTC") } ),
-	is => "rw",
-	default => sub {
-		DateTime->from_epoch(
-			epoch => time(),
-			time_zone => "UTC",
-		);
+	isa             => "DateTime",
+	is              => "ro",
+	default         => sub { DateTime->now() },
+	handles         => sub {
+		my ( $self, $delegate_meta ) = @_;
+
+		my @install;
+		foreach my $method ( map { $_->{name} } $delegate_meta->compute_all_applicable_methods() ) {
+			next if __PACKAGE__->can( $method );
+			next if Exporter->can( $method );
+			next if $method eq "datetime";
+			next if $method =~ / ^_ | ^set(?:_|$) | ^STORABLE | ^DESTROY$ | ^[A-Z]+$ /x;
+			push @install, $method;
+		}
+
+		return map { $_ => $_ } @install;
 	},
 );
 

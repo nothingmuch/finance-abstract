@@ -9,6 +9,10 @@ use warnings;
 
 use Locale::Currency::Format;
 use Carp qw/croak/;
+use Scalar::Util qw/blessed/;
+
+use Math::BigFloat ();
+use Math::BigInt (); # it's autoloaded =/
 
 #coerce "Math::BigFloat" => from Num => via { Math::BigFloat->new };
 # FIXME wait till coercion is fixed
@@ -17,7 +21,54 @@ sub new {
 	$class->SUPER::new( amount => Math::BigFloat->new( delete $params{amount} ), %params );
 }
 
-has amount => ( isa => "Math::BigFloat", is => "ro" );
+# this guy handles all the math operations
+has amount => (
+	isa     => "Math::BigFloat",
+	is      => "ro",
+	handles => sub {
+		my ( $attr, $delegate_meta ) = @_;
+
+		my @accum;
+		foreach my $method ( $delegate_meta->compute_all_applicable_methods() ) {
+			next if __PACKAGE__->can( $method->{name} );
+			next if $method->{name} !~ / ^b | ^is_ /x;
+			next if $method->{name} =~ / ^bnan$ | ^bzereo$ | ^binf$ | ^bone$ /x; # constructors and setters
+		
+
+			(my $new_name = $method->{name}) =~ s/^b//; # strip the 'b' off add, sub, div etc
+
+			my $install_as = $method->{name};
+
+			if ( $method->{name} =~ /^b/ ) {
+				my $method_name = $method->{name};
+				my $delegate_class = $delegate_meta->name;
+
+				$install_as = sub {
+					my $self = shift;
+
+					if ( Scalar::Util::blessed( my $delegate = $self->amount ) ) {
+						# make everything that isa Value::Base into a Math::BigFloat for the args
+						my @args = map {
+							(Scalar::Util::blessed($_) && $_->isa(__PACKAGE__))
+							? ($self->assert_compatible( $_ ) && $_->amount)
+							: $_
+						} @_;
+
+						# derive a copy of self with the changed amount
+						my $res = $delegate->copy->$method_name( @args );
+						return $res unless Scalar::Util::blessed($res) && $res->isa($delegate_class);
+						return $self->meta->clone_instance( $self, amount => $res );
+					}
+					return;
+				};
+			}
+
+			push @accum, $new_name => $install_as;
+		}
+
+		return @accum;
+	}
+);
 
 sub assert_compatible {
 	my $self = shift;
@@ -26,30 +77,13 @@ sub assert_compatible {
 
 sub assert_compatible_on_member {
 	my ( $x, $y, $member ) = @_;
-	croak "Can't compare " . $x->$member . " with " . $y->$member unless $x->$member == $y->$member;
-}
 
-sub not_equals {
-	my ( $x, $y ) = @_;
-	!$x->equals( $y );
-}
+	croak "Can't compare $x with $y because $y is not a subtype of $x"
+		unless $y->isa( $x->meta->name );
 
-sub equals {
-	my ( $x, $y ) = @_;
-	$x->assert_compatible( $y );
-	$x->amount == $y->amount;
-}
-
-sub plus {
-	my ( $x, $y ) = @_;
-	$x->assert_compatible( $y );
-	$x->meta->clone_object( $x, amount => $x->amount + $y->amount );
-}
-
-sub minus {
-	my ( $x, $y ) = @_;
-	$x->assert_compatible( $y );
-	$x->meta->clone_object( $x, amount => $x->amount - $y->amount );
+	my ( $xm, $ym ) = ( $x->$member, $y->$member );
+	croak "Can't compare $x/$xm with $y/$ym"
+		unless blessed($xm) eq blessed($ym) && $x->$member->equals( $y->$member );
 }
 
 sub numify {

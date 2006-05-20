@@ -12,14 +12,17 @@ use aliased ();
 BEGIN {
 	our @EXPORT;
 	foreach my $submodule ( qw/
-		Unit
+		Account
 		Currency
+		Date
+		Unit
 		Value::Real
 		Value::Nominal
-		Date
 		Account
-		Unit::Exchange
-		Unit::Normalize
+		Transfer
+		Transaction
+		Balance
+		State
 	/ ){
 		aliased->import( "Finance::Abstract::$submodule" );
 		( my $alias = $submodule ) =~ s/.*(?:::|')//;

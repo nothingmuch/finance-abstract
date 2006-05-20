@@ -7,10 +7,8 @@ use Moose::Util::TypeConstraints;
 use strict;
 use warnings;
 
-use Locale::Currency;
-
 has code => (
-	isa => subtype( Str => where { defined Locale::Currency::code2currency( $_ ) } ),
+	isa => "Str",
 	is => "ro",
 );
 
@@ -24,6 +22,11 @@ sub stringify {
 	return $self->code;
 }
 
+sub unique_string {
+	my $self = shift;
+	return sprintf( '%s::%s', blessed($self), $self->code );
+}
+
 __PACKAGE__;
 
 __END__
@@ -32,7 +35,8 @@ __END__
 
 =head1 NAME
 
-Finance::Abstract::Currency - The financial tagged type of a unit - a currency symbol.
+Finance::Abstract::Currency - A type of a unit (e.g. USD, frequent flier miles,
+virgins, camels).
 
 =head1 SYNOPSIS
 

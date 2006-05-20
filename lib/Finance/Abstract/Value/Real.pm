@@ -13,12 +13,12 @@ use Locale::Currency::Format ();
 
 extends "Finance::Abstract::Value::Base";
 
-has unit => ( isa => "Finance::Abstract::Unit", is => "ro" );
-
-sub currency {
-	my $self = shift;
-	$self->unit->currency;
-}
+has unit => (
+	isa      => "Finance::Abstract::Unit",
+	is       => "ro",
+	required => 1,
+	handles  => ["currency"],
+);
 
 override assert_compatible => sub {
 	my ( $x, $y ) = @_;
