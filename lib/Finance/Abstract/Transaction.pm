@@ -41,6 +41,12 @@ has transfers => (
 	required   => 1,
 );
 
+sub accounts {
+	my $self = shift;
+	tie my %seen, "Tie::RefHash";
+	grep { !$seen{$_}++ } map { $_->account } $self->transfers;
+}
+
 __PACKAGE__;
 
 __END__

@@ -11,14 +11,9 @@ use Data::Alias;
 
 around new => sub {
 	my $next = shift;
-	my ( $class, $account, @values ) = @_;
+	my ( $class, %params ) = @_;
 
-	# handle named construction
-	unless ( blessed $account ) {
-		my ( undef, %params ) = @_;
-		$account = $params{account};
-		@values = @{ $params{values} || [] };
-	}
+	my @values = @{ delete($params{values}) || [] };
 
 	for (@values) {
 		croak "$_ is not a Finance::Abstract::Value::Nominal"
@@ -30,7 +25,7 @@ around new => sub {
 	croak "There must be only one value per currency"
 		unless @values == keys %by_currency;
 
-	$class->$next( account => $account, values_by_currency => \%by_currency );
+	$class->$next( %params, values_by_currency => \%by_currency );
 };
 
 has account => (
@@ -94,7 +89,7 @@ sub purge_zero {
 sub value {
 	my $self = shift;
 
-	croak "Ambiguous call to ->value - the balance must contain at most one currency"
+	croak "Ambiguous call to ->value - the balance must contain exactly one currency"
 		unless keys %{ $self->_values_by_currency } == 1;
 	
 	( $self->values )[0];
