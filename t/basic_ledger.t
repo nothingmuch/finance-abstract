@@ -9,11 +9,17 @@ use Test::Deep;
 
 use ok "Finance::Abstract::AliasedClasses";
 
+# assets
+my $cashing_account = Account->new( normal_balance => "debit" );
+my $inventory = Account->new( normal_balance => "debit" );
+
+# equity
 my $equity = Account->new( normal_balance => "credit" );
-my $assets = Account->new;
-my $inventory = Account->new;
-my $liabilities = Account->new( normal_balance => "credit" );
-my $expenses = Account->new;
+
+# liabilities
+my $loans = Account->new( normal_balance => "credit" );
+
+my $expenses = Account->new( normal_balance => "debit" );
 my $revenue = Account->new( normal_balance => "credit" );
 
 # start out with 10k
@@ -25,7 +31,7 @@ my $starting_equity = Transaction->new(
 			value   => Nominal->new( currency => Currency->new( code => "USD" ), amount => 10_000 ),
 		),
 		Transfer->new(
-			account => $assets,
+			account => $cashing_account,
 			type    => "debit",
 			value   => Nominal->new( currency => Currency->new( code => "USD" ), amount => 10_000 ),
 		),
@@ -38,23 +44,24 @@ lives_ok {
 	$state = $state->add_transactions( $starting_equity );
 } "state transformed";
 
-cmp_deeply( [ $state->accounts ], set( $equity, $assets ), "equity and assets accounts involved" );
+cmp_deeply( [ $state->accounts ], set( $equity, $cashing_account ), "equity and cash accounts involved" );
 
 is( $state->account_balance( $equity )->value->amount, 10_000, "balance of equity account is 10k" );
 is( $state->account_balance( $equity )->value->currency->code, "USD", "currency is USD" );
 
-is( $state->account_balance( $assets )->value->amount, 10_000, "balance of assets account is 10k" );
-is( $state->account_balance( $assets )->value->currency->code, "USD", "currency is USD" );
+is( $state->account_balance( $cashing_account )->value->amount, 10_000, "balance of cash account is 10k" );
+is( $state->account_balance( $cashing_account )->value->currency->code, "USD", "currency is USD" );
 
 # buy 5k worth of Moose, 1k delivery
 
 my $usd = Currency->new( code => "USD" );
+my $eur = Currency->new( code => "EUR" );
 
 $state = $state->add_transactions(
 	Transaction->new(
 		transfers => [
 			Transfer->new(
-				account => $assets,
+				account => $cashing_account,
 				type    => "credit",
 				value   => Nominal->new( currency => $usd, amount => 6000 ),
 			),
@@ -73,7 +80,7 @@ $state = $state->add_transactions(
 );
 
 is( $state->account_balance( $equity )->value->amount, 10_000, "balance of equity account is 10k" );
-is( $state->account_balance( $assets )->value->amount, 4_000, "balance of assets account is 4k" );
+is( $state->account_balance( $cashing_account )->value->amount, 4_000, "balance of cash account is 4k" );
 is( $state->account_balance( $expenses )->value->amount, 1_000, "balance of equity account is 1k" );
 is( $state->account_balance( $inventory )->value->amount, 5_000, "balance of equity account is 5k" );
 
@@ -88,7 +95,7 @@ $state = $state->add_transactions(
 				value   => Nominal->new( currency => $usd, amount => 5000 ),
 			),
 			Transfer->new(
-				account => $assets,
+				account => $cashing_account,
 				type    => "debit",
 				value   => Nominal->new( currency => $usd, amount => 7500 ),
 			),
@@ -104,15 +111,39 @@ $state = $state->add_transactions(
 
 
 is( $state->account_balance( $equity )->value->amount, 10_000, "balance of equity account is 10k" );
-is( $state->account_balance( $assets )->value->amount, 11_500, "balance of assets account is 11.5k" );
+is( $state->account_balance( $cashing_account )->value->amount, 11_500, "balance of cash account is 11.5k" );
 is( $state->account_balance( $expenses )->value->amount, 1_000, "balance of equity account is 1k" );
 is( $state->account_balance( $inventory )->value->amount, 0, "balance of equity account is 0" );
 is( $state->account_balance( $revenue )->value->amount, 2_500, "balance of equity account is 1.5k" );
 
 is( scalar( @{ $state->transactions } ), 3, "three transactions so far" );
 
-ok( !$state->has_account( $liabilities ), "liabilities account not in state" );
+ok( !$state->has_account( $loans ), "loans account not in state" );
 dies_ok {
-	$state->account_balance( $liabilities )->value
+	$state->account_balance( $loans )->value
 } "can't call value with nothing in balance";
-is( $state->account_balance( $liabilities )->value_for_currency( $usd )->amount, 0, "balance of liabilities account (not yet used) is 0");
+is( $state->account_balance( $loans )->value_for_currency( $usd )->amount, 0, "balance of loans account (not yet used) is 0");
+
+$state = $state->add_transactions(
+	Transaction->new(
+		transfers => [
+			Transfer->new(
+				account => $cashing_account,
+				type    => "debit",
+				value   => Nominal->new( currency => $eur, amount => 1000 ),
+			),
+			Transfer->new(
+				account => $loans,
+				type    => "credit",
+				value   => Nominal->new( currency => $eur, amount => 1000 ),
+			),
+		],
+	),
+);
+
+is( $state->account_balance( $loans )->value_for_currency( $eur )->amount, 1000, "1k euros of loans");
+is( $state->account_balance( $loans )->value_for_currency( $usd )->amount, 0, "still 0 usd");
+
+is( $state->account_balance( $cashing_account )->value_for_currency( $eur )->amount, 1000, "1k euros of cash");
+is( $state->account_balance( $cashing_account )->value_for_currency( $usd )->amount, 11_500, "usd unchanged");
+

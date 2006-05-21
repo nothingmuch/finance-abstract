@@ -12,7 +12,7 @@ enum NormalBalance => qw/debit credit/;
 has normal_balance => (
 	isa => "NormalBalance",
 	is  => "ro",
-	default => "debit",
+	required => 1,
 );
 
 __PACKAGE__;
