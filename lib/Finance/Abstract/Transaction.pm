@@ -7,7 +7,6 @@ use strict;
 use warnings;
 
 use Math::BigFloat;
-use Data::Alias;
 use Tie::RefHash;
 
 use Carp qw/croak/;
@@ -23,10 +22,10 @@ sub BUILD {
 
 		my $value = $transfer->value;
 
-		alias my $sum = $sums{ $value->currency->unique_string };
+		my $sum = \$sums{ $value->currency->unique_string };
 
-		$sum ||= Math::BigFloat->new(0);
-		$sum += ( $transfer->is_credit ? -1 : 1 ) * $value->amount;
+		$$sum ||= Math::BigFloat->new(0);
+		$$sum += ( $transfer->is_credit ? -1 : 1 ) * $value->amount;
 	}
 
 	if (my @unbalanced = grep { $sums{$_} != 0 } keys %sums) {

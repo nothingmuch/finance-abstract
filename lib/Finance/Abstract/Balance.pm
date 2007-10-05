@@ -7,7 +7,6 @@ use strict;
 use warnings;
 
 use Carp qw/croak/;
-use Data::Alias;
 
 around new => sub {
 	my $next = shift;
@@ -60,10 +59,10 @@ sub add_values {
 	my %sums = %{ $self->_values_by_currency };
 
 	foreach my $value ( @values ) {
-		alias my $sum = $sums{ $value->currency->unique_string };
-		$sum = Finance::Abstract::Value::Nominal->new(
+		my $sum = \$sums{ $value->currency->unique_string };
+		$$sum = Finance::Abstract::Value::Nominal->new(
 			currency => $value->currency,
-			amount   => ( $value->amount + ( $sum ? $sum->amount : 0 ) )
+			amount   => ( $value->amount + ( $$sum ? $$sum->amount : 0 ) )
 		);
 	}
 

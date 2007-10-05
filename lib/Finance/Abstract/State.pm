@@ -8,7 +8,6 @@ use warnings;
 
 use Carp qw/croak/;
 use Tie::RefHash;
-use Data::Alias;
 
 around new => sub {
 	my $next = shift;
@@ -97,11 +96,11 @@ sub add_transactions {
 		tie my %values_per_account, 'Tie::RefHash';
 
 		foreach my $transfer ( $txn->transfers ) {
-			alias my $balance = $by_account{ $transfer->account };
-			$balance ||= Finance::Abstract::Balance->new( account => $transfer->account );
+			my $balance = \$by_account{ $transfer->account };
+			$$balance ||= Finance::Abstract::Balance->new( account => $transfer->account );
 
 			my $method = $transfer->type;
-			$balance = $balance->$method( $transfer->value );
+			$$balance = $$balance->$method( $transfer->value );
 		}
 
 		foreach my $balance ( values %by_account ) {
